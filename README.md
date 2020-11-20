@@ -1,2 +1,2 @@
-# VR-Climbe
+# VR-Climb
 VR - climbing game
