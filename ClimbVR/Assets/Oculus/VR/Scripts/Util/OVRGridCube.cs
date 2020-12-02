@@ -35,7 +35,7 @@ public class OVRGridCube : MonoBehaviour
 	private bool 	CubeSwitchColor     	   = false;
 
 	private int   gridSizeX  = 6;
-	private int   gridSizeY  = 4;
+	private int   gridSizeY  = 8;
 	private int   gridSizeZ  = 6;
 	private float gridScale  = 0.3f;
 	private float cubeScale  = 0.03f;

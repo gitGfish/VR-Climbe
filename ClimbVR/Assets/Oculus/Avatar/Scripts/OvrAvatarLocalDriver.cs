@@ -8,7 +8,9 @@ public class OvrAvatarLocalDriver : OvrAvatarDriver {
 
     Vector3 centerEyePosition = Vector3.zero;
     Quaternion centerEyeRotation = Quaternion.identity;
+    public bool is_hand_movment_locked = false;
 
+    
     ControllerPose GetMalibuControllerPose(OVRInput.Controller controller)
     {
         ovrAvatarButton buttons = 0;
@@ -61,19 +63,23 @@ public class OvrAvatarLocalDriver : OvrAvatarDriver {
             OVRPlugin.Node.EyeCenter, OVRPlugin.Step.Render, out centerEyePosition);
         OVRNodeStateProperties.GetNodeStatePropertyQuaternion(UnityEngine.XR.XRNode.CenterEye, NodeStatePropertyType.Orientation,
             OVRPlugin.Node.EyeCenter, OVRPlugin.Step.Render, out centerEyeRotation);
-
-        CurrentPose = new PoseFrame
-        {
-            voiceAmplitude = voiceAmplitude,
-            headPosition = centerEyePosition,
-            headRotation = centerEyeRotation,
-            handLeftPosition = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch),
-            handLeftRotation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.LTouch),
-            handRightPosition = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch),
-            handRightRotation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch),
-            controllerLeftPose = GetControllerPose(OVRInput.Controller.LTouch),
-            controllerRightPose = GetControllerPose(OVRInput.Controller.RTouch),
-        };
+Debug.Log("gggg");
+        if(!is_hand_movment_locked){
+            Debug.Log("log");
+            CurrentPose = new PoseFrame
+            {
+                voiceAmplitude = voiceAmplitude,
+                headPosition = centerEyePosition,
+                headRotation = centerEyeRotation,
+                handLeftPosition = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch),
+                handLeftRotation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.LTouch),
+                handRightPosition = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch),
+                handRightRotation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch),
+                controllerLeftPose = GetControllerPose(OVRInput.Controller.LTouch),
+                controllerRightPose = GetControllerPose(OVRInput.Controller.RTouch),
+            };
+        }
+        
     }
 
     public override void UpdateTransforms(IntPtr sdkAvatar)

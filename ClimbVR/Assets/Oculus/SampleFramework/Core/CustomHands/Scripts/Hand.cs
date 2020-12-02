@@ -3,7 +3,7 @@
 Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.  
 
 See SampleFramework license.txt for license terms.  Unless required by applicable law 
-or agreed to in writing, the sample code is provided “AS IS” WITHOUT WARRANTIES OR 
+or agreed to in writing, the sample code is provided ï¿½AS ISï¿½ WITHOUT WARRANTIES OR 
 CONDITIONS OF ANY KIND, either express or implied.  See the license for specific 
 language governing permissions and limitations under the license.
 
@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using OVRTouchSample;
+using UnityEngine.UI;
 #if UNITY_EDITOR
 using UnityEngine.SceneManagement;
 #endif
@@ -23,6 +24,26 @@ namespace OVRTouchSample
     [RequireComponent(typeof(OVRGrabber))]
     public class Hand : MonoBehaviour
     {
+        public Transform handTransform;
+        public float forceAmount;
+        int jump_cooldown = 60;
+        bool collision = false;
+        public bool left_right = false;
+        public OVRPlayerController Player;
+        private OVRHapticsClip OVRHapticClip;
+        public AudioClip hapticTouch;
+        public Vector3 pos;
+        // true only on the first frame of grabbing to set locked position
+        bool toggle_grabed_this_frame = false;
+        Vector3 grabed_locked_position;
+        public Image Hand_Fill;
+        private float left_hand_cooldown = 0;
+        private bool left_hand_cooldown_reached = false;
+        private float right_hand_cooldown = 0;
+        private bool right_hand_cooldown_reached = false;
+        public int hand_cooldown_limit = 300;
+
+
         public const string ANIM_LAYER_NAME_POINT = "Point Layer";
         public const string ANIM_LAYER_NAME_THUMB = "Thumb Layer";
         public const string ANIM_PARAM_NAME_FLEX = "Flex";
@@ -60,6 +81,8 @@ namespace OVRTouchSample
         private bool m_isGivingThumbsUp = false;
         private float m_pointBlend = 0.0f;
         private float m_thumbsUpBlend = 0.0f;
+
+        private bool switch_to_physics_hand_movment = false;
 
         private bool m_restoreOnInputAcquired = false;
 
@@ -104,10 +127,106 @@ namespace OVRTouchSample
 
             float flex = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, m_controller);
 
-            bool collisionEnabled = m_grabber.grabbedObject == null && flex >= THRESH_COLLISION_FLEX;
-            CollisionEnable(collisionEnabled);
+            bool grabedGrabableObject = m_grabber.m_grabbedObj != null && flex >= THRESH_COLLISION_FLEX && !right_hand_cooldown_reached && !left_hand_cooldown_reached ;
 
+            if(grabedGrabableObject && toggle_grabed_this_frame == false){
+                OVRHapticClip = new OVRHapticsClip(hapticTouch);
+                if(left_right){
+                    OVRHaptics.LeftChannel.Preempt(OVRHapticClip);
+                }else{
+                    OVRHaptics.RightChannel.Preempt(OVRHapticClip);
+                }
+                grabed_locked_position = this.transform.position;
+                toggle_grabed_this_frame = true;
+            }
+            
+            //Player.AddForce(new Vector3(0,1100,0));
+            //Player.MoveThrottle += new Vector3(0,1,0);
+            CollisionEnable(true);
             UpdateAnimStates();
+            if(!grabedGrabableObject){
+                if(left_right){
+                    if(left_hand_cooldown > 0){
+                        left_hand_cooldown -=3;
+                        Hand_Fill.fillAmount = (left_hand_cooldown/hand_cooldown_limit);
+                    }else{
+                        left_hand_cooldown_reached = false;
+                    }
+                    Player.left_grabbing = false;
+                }else{
+                    if(right_hand_cooldown > 0){
+                        right_hand_cooldown -=3;
+                        Hand_Fill.fillAmount = (right_hand_cooldown/hand_cooldown_limit);
+                    }else{
+                        right_hand_cooldown_reached = false;
+                    }
+                    Player.right_grabbing = false;
+                }
+                
+                m_grabber.m_grabbedObj = null;
+                toggle_grabed_this_frame = false;
+                if(switch_to_physics_hand_movment){
+                    Vector3 dir = handTransform.position - this.transform.position;
+                    pos = dir.normalized * dir.magnitude * forceAmount;
+                    this.GetComponent<Rigidbody>().AddForce(pos);
+                    
+                }else{
+                    this.transform.position = handTransform.position;
+                }
+                this.transform.rotation = handTransform.rotation;
+                
+                // hand always "looks" at grabed object
+                //Quaternion rotation = Quaternion.LookRotation(relativePos, Vector3.up);
+                //transform.rotation = rotation;
+                
+            }else{
+                
+                if(left_right){
+                    if(left_hand_cooldown >= hand_cooldown_limit){
+                        left_hand_cooldown_reached = true;
+                    }else{
+                        Hand_Fill.fillAmount = (left_hand_cooldown/hand_cooldown_limit);
+                        left_hand_cooldown++;
+                    }
+                    Player.left_grabbing = true;
+                        //maintain one hand moving the player and not 2 at the same time
+                    Player.right_grabbing = false;
+                }else{
+                    if(right_hand_cooldown >= hand_cooldown_limit){
+                        right_hand_cooldown_reached = true;
+                    }else{
+                        Hand_Fill.fillAmount = (right_hand_cooldown/hand_cooldown_limit);
+                        right_hand_cooldown++;
+                    }
+                    Player.right_grabbing = true;
+                    //maintain one hand moving the player and not 2 at the same time
+                    Player.right_grabbing = false;
+                }
+                switch_to_physics_hand_movment = false;
+                //grabbing = true;
+                Vector3 dir = handTransform.position - this.transform.position;
+                Player.MoveThrottle -= dir * Time.deltaTime * 60;
+                this.transform.position = grabed_locked_position;
+                this.transform.LookAt(m_grabber.grabbedObject.transform.position);
+
+                
+                
+                
+            }
+            
+        }
+
+        void OnCollisionEnter(Collision col) 
+        {
+            
+        }
+    
+        void OnCollisionStay(Collision col) {
+            switch_to_physics_hand_movment = true;
+        }
+        void OnTriggerExit(Collider obj)
+        {
+            switch_to_physics_hand_movment = false;
         }
 
         // Just checking the state of the index and thumb cap touch sensors, but with a little bit of

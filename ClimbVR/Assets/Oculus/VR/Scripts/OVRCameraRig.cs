@@ -247,7 +247,7 @@ public class OVRCameraRig : MonoBehaviour
 			}
 
 			trackerAnchor.localPosition = tracker.position;
-
+			
 			OVRPose leftOffsetPose = OVRPose.identity;
 			OVRPose rightOffsetPose = OVRPose.identity;
 			if (OVRManager.loadedXRDevice == OVRManager.XRDevice.OpenVR)
@@ -265,6 +265,7 @@ public class OVRCameraRig : MonoBehaviour
 			rightControllerAnchor.localRotation = rightOffsetPose.orientation;
 			leftControllerAnchor.localPosition = leftOffsetPose.position;
 			leftControllerAnchor.localRotation = leftOffsetPose.orientation;
+			
 		}
 
 		RaiseUpdatedAnchorsEvent();

@@ -136,7 +136,7 @@ public class OVRPlayerController : MonoBehaviour
 	protected OVRCameraRig CameraRig = null;
 
 	private float MoveScale = 1.0f;
-	private Vector3 MoveThrottle = Vector3.zero;
+	public Vector3 MoveThrottle = Vector3.zero;
 	private float FallSpeed = 0.0f;
 	private OVRPose? InitialPose;
 	public float InitialYRotation { get; private set; }
@@ -146,11 +146,14 @@ public class OVRPlayerController : MonoBehaviour
 	private bool HaltUpdateMovement = false;
 	private bool prevHatLeft = false;
 	private bool prevHatRight = false;
-	private float SimulationRate = 60f;
+	public float SimulationRate = 60f;
 	private float buttonRotation = 0f;
 	private bool ReadyToSnapTurn; // Set to true when a snap turn has occurred, code requires one frame of centered thumbstick to enable another snap turn.
 	private bool playerControllerEnabled = false;
 
+	public bool left_grabbing = false;
+	public bool right_grabbing = false;
+	public int gravity = 1;
 	void Start()
 	{
 		// Add eye-depth as a camera offset from the player controller
@@ -225,6 +228,9 @@ public class OVRPlayerController : MonoBehaviour
 
 	protected virtual void UpdateController()
 	{
+		if(OVRInput.Get(OVRInput.Button.One)){
+			Jump();
+		}
 		if (useProfileData)
 		{
 			if (InitialPose == null)
@@ -263,7 +269,7 @@ public class OVRPlayerController : MonoBehaviour
 		{
 			CameraUpdated();
 		}
-
+		
 		UpdateMovement();
 
 		Vector3 moveDirection = Vector3.zero;
@@ -276,21 +282,24 @@ public class OVRPlayerController : MonoBehaviour
 
 		moveDirection += MoveThrottle * SimulationRate * Time.deltaTime;
 
-		// Gravity
-		if (Controller.isGrounded && FallSpeed <= 0)
-			FallSpeed = ((Physics.gravity.y * (GravityModifier * 0.002f)));
-		else
-			FallSpeed += ((Physics.gravity.y * (GravityModifier * 0.002f)) * SimulationRate * Time.deltaTime);
+		
+		
+		if(!left_grabbing && !right_grabbing ){
+				// Gravity
+			if (Controller.isGrounded && FallSpeed <= 0)
+				FallSpeed = ((gravity * (GravityModifier * 0.001f)));
+			else
+				FallSpeed += (((gravity )* (GravityModifier * 0.001f)) * SimulationRate * Time.deltaTime);
+			moveDirection.y += FallSpeed * SimulationRate * Time.deltaTime;
+		}
+		
 
-		moveDirection.y += FallSpeed * SimulationRate * Time.deltaTime;
-
-
-		if (Controller.isGrounded && MoveThrottle.y <= transform.lossyScale.y * 0.001f)
+		/*if (Controller.isGrounded && MoveThrottle.y <= transform.lossyScale.y * 0.001f)
 		{
 			// Offset correction for uneven ground
 			float bumpUpOffset = Mathf.Max(Controller.stepOffset, new Vector3(moveDirection.x, 0, moveDirection.z).magnitude);
 			moveDirection -= bumpUpOffset * Vector3.up;
-		}
+		}*/
 
 		if (PreCharacterMove != null)
 		{
@@ -299,9 +308,11 @@ public class OVRPlayerController : MonoBehaviour
 		}
 
 		Vector3 predictedXZ = Vector3.Scale((Controller.transform.localPosition + moveDirection), new Vector3(1, 0, 1));
-
 		// Move contoller
+		
 		Controller.Move(moveDirection);
+		
+		
 		Vector3 actualXZ = Vector3.Scale(Controller.transform.localPosition, new Vector3(1, 0, 1));
 
 		if (predictedXZ != actualXZ)
@@ -311,12 +322,11 @@ public class OVRPlayerController : MonoBehaviour
 
 
 
-
 	public virtual void UpdateMovement()
 	{
 		if (HaltUpdateMovement)
 			return;
-
+		
 		if (EnableLinearMovement)
 		{
 			bool moveForward = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
@@ -346,8 +356,8 @@ public class OVRPlayerController : MonoBehaviour
 				MoveScale = 0.70710678f;
 
 			// No positional movement if we are in the air
-			if (!Controller.isGrounded)
-				MoveScale = 0.0f;
+			/*if (!Controller.isGrounded)
+				MoveScale = 0.0f;*/
 
 			MoveScale *= SimulationRate * Time.deltaTime;
 
@@ -388,21 +398,23 @@ public class OVRPlayerController : MonoBehaviour
 				primaryAxis.y = Mathf.Round(primaryAxis.y * FixedSpeedSteps) / FixedSpeedSteps;
 				primaryAxis.x = Mathf.Round(primaryAxis.x * FixedSpeedSteps) / FixedSpeedSteps;
 			}
-
-			if (primaryAxis.y > 0.0f)
+			if(!left_grabbing && !right_grabbing ){
+				if (primaryAxis.y > 0.0f)
 				MoveThrottle += ort * (primaryAxis.y * transform.lossyScale.z * moveInfluence * Vector3.forward);
 
-			if (primaryAxis.y < 0.0f)
-				MoveThrottle += ort * (Mathf.Abs(primaryAxis.y) * transform.lossyScale.z * moveInfluence *
-									   BackAndSideDampen * Vector3.back);
+				if (primaryAxis.y < 0.0f)
+					MoveThrottle += ort * (Mathf.Abs(primaryAxis.y) * transform.lossyScale.z * moveInfluence *
+										BackAndSideDampen * Vector3.back);
 
-			if (primaryAxis.x < 0.0f)
-				MoveThrottle += ort * (Mathf.Abs(primaryAxis.x) * transform.lossyScale.x * moveInfluence *
-									   BackAndSideDampen * Vector3.left);
+				if (primaryAxis.x < 0.0f)
+					MoveThrottle += ort * (Mathf.Abs(primaryAxis.x) * transform.lossyScale.x * moveInfluence *
+										BackAndSideDampen * Vector3.left);
 
-			if (primaryAxis.x > 0.0f)
-				MoveThrottle += ort * (primaryAxis.x * transform.lossyScale.x * moveInfluence * BackAndSideDampen *
-									   Vector3.right);
+				if (primaryAxis.x > 0.0f)
+					MoveThrottle += ort * (primaryAxis.x * transform.lossyScale.x * moveInfluence * BackAndSideDampen *
+										Vector3.right);
+			}
+			
 		}
 
 		if (EnableRotation)

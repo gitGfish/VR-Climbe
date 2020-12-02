@@ -47,12 +47,14 @@ public class OvrAvatar : MonoBehaviour
     public IntPtr sdkAvatar = IntPtr.Zero;
     public string oculusUserID;
     public OvrAvatarDriver Driver;
+    
 
     [Header("Capabilities")]
     public bool EnableBody = true;
     public bool EnableHands = true;
     public bool EnableBase = true;
     public bool EnableExpressive = false;
+    public static bool lock_hand_position = false;
 
     [Header("Network")]
     public bool RecordPackets;
@@ -691,7 +693,9 @@ public class OvrAvatar : MonoBehaviour
     public static ovrAvatarHandInputState CreateInputState(ovrAvatarTransform transform, OvrAvatarDriver.ControllerPose pose)
     {
         ovrAvatarHandInputState inputState = new ovrAvatarHandInputState();
-        inputState.transform = transform;
+        if(!lock_hand_position){
+            inputState.transform = transform;
+        }
         inputState.buttonMask = pose.buttons;
         inputState.touchMask = pose.touches;
         inputState.joystickX = pose.joystickPosition.x;

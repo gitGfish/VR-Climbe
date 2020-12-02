@@ -71,7 +71,7 @@ public class OVRGrabber : MonoBehaviour
     protected Quaternion m_anchorOffsetRotation;
     protected Vector3 m_anchorOffsetPosition;
     protected float m_prevFlex;
-	protected OVRGrabbable m_grabbedObj = null;
+	public OVRGrabbable m_grabbedObj = null;
     protected Vector3 m_grabbedObjectPosOff;
     protected Quaternion m_grabbedObjectRotOff;
 	protected Dictionary<OVRGrabbable, int> m_grabCandidates = new Dictionary<OVRGrabbable, int>();
@@ -83,6 +83,7 @@ public class OVRGrabber : MonoBehaviour
     public OVRGrabbable grabbedObject
     {
         get { return m_grabbedObj; }
+        
     }
 
 	public void ForceRelease(OVRGrabbable grabbable)
@@ -217,14 +218,26 @@ public class OVRGrabber : MonoBehaviour
 
     protected void CheckForGrabOrRelease(float prevFlex)
     {
-        if ((m_prevFlex >= grabBegin) && (prevFlex < grabBegin))
+
+        if ((m_prevFlex >= grabBegin))
         {
             GrabBegin();
         }
-        else if ((m_prevFlex <= grabEnd) && (prevFlex > grabEnd))
+        else if ((m_prevFlex <= grabEnd))
         {
             GrabEnd();
         }
+
+
+
+        // if ((m_prevFlex >= grabBegin) && (prevFlex < grabBegin))
+        // {
+        //     GrabBegin();
+        // }
+        // else if ((m_prevFlex <= grabEnd) && (prevFlex > grabEnd))
+        // {
+        //     GrabEnd();
+        // }
     }
 
     protected virtual void GrabBegin()
@@ -312,7 +325,7 @@ public class OVRGrabber : MonoBehaviour
 
             // NOTE: This is to get around having to setup collision layers, but in your own project you might
             // choose to remove this line in favor of your own collision layer setup.
-            SetPlayerIgnoreCollision(m_grabbedObj.gameObject, true);
+            //SetPlayerIgnoreCollision(m_grabbedObj.gameObject, true);
 
             if (m_parentHeldObject)
             {
@@ -357,6 +370,7 @@ public class OVRGrabber : MonoBehaviour
 			Vector3 angularVelocity = trackingSpace.orientation * OVRInput.GetLocalControllerAngularVelocity(m_controller);
 
             GrabbableRelease(linearVelocity, angularVelocity);
+            m_grabbedObj = null;
         }
 
         // Re-enable grab volumes to allow overlap events
